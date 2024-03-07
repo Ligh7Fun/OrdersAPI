@@ -95,3 +95,16 @@ class RegisterAccount(APIView):
             return Response({'Status': True})
         else:
             return Response({'Status': False, 'Errors': user_serializer.errors})
+
+
+class ConfirmAccount(APIView):
+    """
+    Класс для подтверждения почты
+    """
+
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [UserRateThrottle]
+
+    def get(self, request, *args, **kwargs):
+        pass
