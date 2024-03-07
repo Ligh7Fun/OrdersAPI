@@ -9,6 +9,8 @@ from .permissions import IsShopOwner
 from requests import get
 from yaml import load as load_yaml, Loader
 
+from .serializers import UserSerializer
+
 
 class PartnerUpdate(APIView):
     """
@@ -72,3 +74,24 @@ class PartnerUpdate(APIView):
                 return Response({'Status': True})
 
         return Response({'Status': False, 'Error': 'Неверная ссылка или данные отсутствуют'})
+
+
+class RegisterAccount(APIView):
+    """
+    Класс для регистрации аккаунта
+    """
+
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [UserRateThrottle]
+    serializer_class = UserSerializer
+
+    def post(self, request, *args, **kwargs):
+        user_serializer = UserSerializer(data=request.data)
+        if user_serializer.is_valid():
+            user = user_serializer.save()
+            user.set_password(request.data.get('password'))
+            user.save()
+            return Response({'Status': True})
+        else:
+            return Response({'Status': False, 'Errors': user_serializer.errors})

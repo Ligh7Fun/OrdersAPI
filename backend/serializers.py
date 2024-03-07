@@ -1,5 +1,5 @@
 from rest_framework import serializers
-
+from django.contrib.auth import password_validation
 from backend.models import User, Category, Shop, ProductInfo, Product, ProductParameter, OrderItem, Order, Contact
 
 
@@ -15,10 +15,12 @@ class ContactSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     contacts = ContactSerializer(read_only=True, many=True)
+    # Валидация пароля
+    password = serializers.CharField(validators=[password_validation.validate_password])
 
     class Meta:
         model = User
-        fields = ('id', 'first_name', 'last_name', 'email', 'company', 'position', 'contacts')
+        fields = ('id', 'first_name', 'last_name', 'email', 'password', 'company', 'position', 'type', 'contacts')
         read_only_fields = ('id',)
 
 

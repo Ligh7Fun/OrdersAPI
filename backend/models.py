@@ -33,6 +33,7 @@ class UserManager(BaseUserManager):
         """
         if not email:
             raise ValueError('The given email must be set')
+
         email = self.normalize_email(email)
         user = self.model(email=email, **extra_fields)
         user.set_password(password)
@@ -62,6 +63,7 @@ class User(AbstractUser):
     """
     REQUIRED_FIELDS = []
     USERNAME_FIELD = 'email'
+    objects = UserManager()
     email = models.EmailField('email address', unique=True)
     company = models.CharField(verbose_name='Компания', max_length=40, blank=True)
     position = models.CharField(verbose_name='Должность', max_length=40, blank=True)
