@@ -3,6 +3,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.throttling import UserRateThrottle
+from django.urls import reverse
+from backend.models import ConfirmEmailToken
 
 from .models import Shop, Category, ProductInfo, Product, Parameter, ProductParameter
 from .permissions import IsShopOwner
@@ -92,9 +94,24 @@ class RegisterAccount(APIView):
             user = user_serializer.save()
             user.set_password(request.data.get('password'))
             user.save()
-            return Response({'Status': True})
+
+            # TEST
+            # Создание токена подтверждения
+            token, _ = ConfirmEmailToken.objects.get_or_create(user_id=user.pk)
+            # Формирование ссылки для подтверждения
+            confirmation_link = f'http://127.0.0.1:8000/api/user/register/confirm/?token={token.key}&email={user.email}'
+            # TEST
+
+            return Response({'Status': True, 'Link': confirmation_link})
         else:
             return Response({'Status': False, 'Errors': user_serializer.errors})
+
+
+"""
+{
+    "Status": true,
+    "Link": "http://127.0.0.1:8000/api/user/register/confirm/?token=3df332ed96d459a526920777801291528fce&email=m5221710@gmail.com"
+}"""
 
 
 class ConfirmAccount(APIView):
