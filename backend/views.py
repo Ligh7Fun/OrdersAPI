@@ -1,3 +1,4 @@
+from django.contrib.auth import authenticate
 from django.core.validators import URLValidator
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -5,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.throttling import UserRateThrottle
 from django.urls import reverse
 from backend.models import ConfirmEmailToken
+from rest_framework.authtoken.models import Token
 
 from .models import Shop, Category, ProductInfo, Product, Parameter, ProductParameter
 from .permissions import IsShopOwner
@@ -136,3 +138,28 @@ class ConfirmAccount(APIView):
             return Response({'Status': True})
         else:
             return Response({'Status': False, 'Error': 'Пользователь уже активирован или ссылка некорректна'})
+
+
+class LoginAccount(APIView):
+    """
+    Класс для авторизации пользователя
+    """
+
+    authentication_classes = []
+    permission_classes = []
+    throttle_classes = [UserRateThrottle]
+
+    def post(self, request, *args, **kwargs):
+        email = request.data.get('email')
+        password = request.data.get('password')
+
+        if email and password:
+            user = authenticate(request, username=email, password=password)
+            if user is not None:
+                if user.is_active:
+                    token, _ = Token.objects.get_or_create(user=user)
+                    return Response({'Status': True, 'Token': token.key})
+        else:
+            return Response({'Status': False, 'Error': 'Не указан email или пароль'})
+
+        return Response({'Status': False, 'Error': 'Не удалось авторизоваться'})
