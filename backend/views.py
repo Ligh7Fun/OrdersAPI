@@ -123,5 +123,16 @@ class ConfirmAccount(APIView):
     permission_classes = []
     throttle_classes = [UserRateThrottle]
 
-    def get(self, request, *args, **kwargs):
-        pass
+    def post(self, request, *args, **kwargs):
+        confirmation_token = request.data.get('token')
+        email = request.data.get('email')
+        if not confirmation_token or not email:
+            return Response({'Status': False, 'Error': 'Не указаны необходимые данные!'})
+        token = ConfirmEmailToken.objects.filter(user__email=email, key=confirmation_token).first()
+        if token:
+            token.user.is_active = True
+            token.user.save()
+            token.delete()
+            return Response({'Status': True})
+        else:
+            return Response({'Status': False, 'Error': 'Пользователь уже активирован или ссылка некорректна'})
