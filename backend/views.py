@@ -1,5 +1,8 @@
 from django.contrib.auth import authenticate
 from django.core.validators import URLValidator
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -7,13 +10,14 @@ from rest_framework.throttling import UserRateThrottle
 from django.urls import reverse
 from backend.models import ConfirmEmailToken
 from rest_framework.authtoken.models import Token
+from rest_framework.generics import ListAPIView
 
 from .models import Shop, Category, ProductInfo, Product, Parameter, ProductParameter
 from .permissions import IsShopOwner
 from requests import get
 from yaml import load as load_yaml, Loader
 
-from .serializers import UserSerializer
+from .serializers import UserSerializer, CategorySerializer, ShopSerializer
 
 
 class PartnerUpdate(APIView):
@@ -25,6 +29,8 @@ class PartnerUpdate(APIView):
     throttle_classes = [UserRateThrottle]
 
     def post(self, request, *args, **kwargs):
+        if request.user.type != 'shop':
+            return Response({'Status': False, 'Error': 'Только для магазинов'})
         url = request.data.get('url')
         if url:
             validate_url = URLValidator()
@@ -109,13 +115,6 @@ class RegisterAccount(APIView):
             return Response({'Status': False, 'Errors': user_serializer.errors})
 
 
-"""
-{
-    "Status": true,
-    "Link": "http://127.0.0.1:8000/api/user/register/confirm/?token=3df332ed96d459a526920777801291528fce&email=m5221710@gmail.com"
-}"""
-
-
 class ConfirmAccount(APIView):
     """
     Класс для подтверждения почты
@@ -163,3 +162,31 @@ class LoginAccount(APIView):
             return Response({'Status': False, 'Error': 'Не указан email или пароль'})
 
         return Response({'Status': False, 'Error': 'Не удалось авторизоваться'})
+
+
+class CategoryView(ListAPIView):
+    """
+    Класс для получения списка категорий
+    """
+    throttle_classes = [UserRateThrottle]
+    serializer_class = CategorySerializer
+    pagination_class = LimitOffsetPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['name']
+    search_fields = ['name']
+    ordering_fields = ['id', 'name']
+    queryset = Category.objects.all()
+
+
+class ShopView(ListAPIView):
+    """
+    Класс для получения списка магазинов
+    """
+    throttle_classes = [UserRateThrottle]
+    serializer_class = ShopSerializer
+    pagination_class = LimitOffsetPagination
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_fields = ['name', 'state', 'user']
+    search_fields = ['name', 'user__first_name', 'user__last_name']
+    ordering_fields = ['id', 'name', 'state', 'user__first_name', 'user__last_name']
+    queryset = Shop.objects.all()
